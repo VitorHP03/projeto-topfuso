@@ -16,7 +16,6 @@
 
     <div id="fundotabela">
         <section id="tabela">
-
             <div>
                 <table id="minhaTabela">
                     <thead>
@@ -24,22 +23,79 @@
                             <th>Item</th>
                             <th>Quantidade</th>
                             <th>Data</th>
+                            <th>Prazo</th>
                             <th>Observação</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Linhas alimentadas pelo Firebase -->
+
                     </tbody>
                 </table>
 
-                <button class="btn-adicionar" id="adicionar" onclick="adicionarLinha()">Adicionar Item</button>
+                <button class="btn-adicionar" id="adicionar" onclick="abrirModalCadastro()">Adicionar Item</button>
             </div>
         </section>
     </div>
 
+    <div id="meuModal" class="modal-background">
+        <div class="modal-conteudo">
+            <h3 id="modalTitulo">Adicionar Novo Item</h3>
+
+            <div class="form-grupo">
+                <label for="inputSenha">Senha Master (Obrigatória):</label>
+                <input type="password" id="inputSenha" placeholder="Digite a senha">
+            </div>
+            <div class="form-grupo">
+                <label for="inputNome">Nome do Item:</label>
+                <input type="text" id="inputNome">
+            </div>
+            <div class="form-grupo">
+                <label for="inputQtd">Quantidade:</label>
+                <input type="text" id="inputQtd">
+            </div>
+            <div class="form-grupo">
+                <label for="inputData">Data de Envio:</label>
+                <input type="date" id="inputData">
+            </div>
+            <div class="form-grupo">
+                <label for="inputPrazo">Prazo (Opcional):</label>
+                <input type="text" id="inputPrazo" placeholder="Deixe vazio para 'indefinido'">
+            </div>
+            <div class="form-grupo">
+                <label for="inputObs">Observação:</label>
+                <input type="text" id="inputObs">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-salvar" id="btnConfirmarForm">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOVO: MODAL EXCLUSIVO PARA CONFIRMAR EXCLUSÃO COM SENHA OCULTA -->
+    <div id="modalExcluir" class="modal-background">
+        <div class="modal-conteudo modal-pequeno">
+            <h3 class="titulo-excluir">Confirmar Exclusão</h3>
+
+            <p class="texto-aviso">
+                Você está prestes a apagar este item permanentemente. Digite a senha master para confirmar:
+            </p>
+
+            <div class="form-grupo">
+                <label for="inputSenhaExcluir">Senha Master (Obrigatória):</label>
+                <input type="password" id="inputSenhaExcluir" placeholder="Digite a senha">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalExcluir()">Cancelar</button>
+                <button class="btn-excluir padding-largo" id="btnConfirmarDeletar">Excluir</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
-        // LINKS OFICIAIS E GARANTIDOS DO FIREBASE V10
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import {
             getFirestore,
@@ -51,7 +107,6 @@
             updateDoc
         } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-        // Suas credenciais do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCQV8hQ8ijySu2x531DLyrajZzm3-TiF3M",
             authDomain: "topfuso-c0e54.firebaseapp.com",
@@ -63,23 +118,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // ATENÇÃO: Certifique-se de que no seu painel do Firebase a coleção se chama exatamente "itensTabela"
         const itensColecao = collection(db, "itensTabela");
+
+        const SENHA_MASTER = "1234";
+        let idItemSendoEditado = null; // Controla se estamos adicionando ou editando
+        let idItemParaExcluir = null;  // Controla o item selecionado para exclusão
 
         // --- FUNÇÃO: ESCUTAR O BANCO EM TEMPO REAL ---
         onSnapshot(itensColecao, (snapshot) => {
             const tabelaBody = document.getElementById("minhaTabela").getElementsByTagName('tbody')[0];
-            tabelaBody.innerHTML = ""; // Limpa a tabela (inclusive a linha de exemplo do HTML)
-
-            // LOG DE TESTE: Abre o F12 para ver se o Firebase está localizando documentos
-            console.log("Total de itens encontrados no banco: ", snapshot.size);
+            tabelaBody.innerHTML = "";
 
             if (snapshot.size === 0) {
-                // Se o banco estiver vazio, ele cria uma linha avisando, em vez de deixar sumir tudo
                 const novaLinha = tabelaBody.insertRow();
                 const celulaAviso = novaLinha.insertCell(0);
-                celulaAviso.colSpan = 5;
+                celulaAviso.colSpan = 6;
                 celulaAviso.textContent = "Nenhum item encontrado no banco de dados. Clique em Adicionar!";
                 celulaAviso.style.textAlign = "center";
                 return;
@@ -94,12 +147,22 @@
                 const celulaNome = novaLinha.insertCell(0);
                 const celulaQuantidade = novaLinha.insertCell(1);
                 const celulaData = novaLinha.insertCell(2);
-                const celulaObservacao = novaLinha.insertCell(3);
-                const celulaAcoes = novaLinha.insertCell(4);
+                const celulaPrazo = novaLinha.insertCell(3);
+                const celulaObservacao = novaLinha.insertCell(4);
+                const celulaAcoes = novaLinha.insertCell(5);
+
+                let dataFormatada = "-";
+                if (dados.dataEnvio && dados.dataEnvio.includes("-")) {
+                    const partes = dados.dataEnvio.split("-");
+                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                } else {
+                    dataFormatada = dados.dataEnvio || "-";
+                }
 
                 celulaNome.textContent = dados.nome || "-";
                 celulaQuantidade.textContent = dados.quantidade || "-";
-                celulaData.textContent = dados.dataEnvio || "-";
+                celulaData.textContent = dataFormatada;
+                celulaPrazo.textContent = dados.prazo || "indefinido";
                 celulaObservacao.textContent = dados.observacao || "-";
 
                 celulaAcoes.innerHTML = `
@@ -111,103 +174,151 @@
             configurarBotoesAcoes();
         });
 
-        const SENHA_MASTER = "1234";
-
-        function verificarSenha() {
-            const senhaDigitada = prompt("Esta ação é restrita. Digite a senha para continuar:");
-            if (senhaDigitada === null) return false;
-
-            if (senhaDigitada === SENHA_MASTER) {
-                return true;
-            } else {
-                alert("Senha incorreta! Acesso negado.");
-                return false;
-            }
+        // --- CONTROLE DA JANELA INTERNA (MODAL CADASTRO/EDIÇÃO) ---
+        window.abrirModalCadastro = function () {
+            idItemSendoEditado = null;
+            document.getElementById("modalTitulo").textContent = "Adicionar Novo Item";
+            limparCamposModal();
+            document.getElementById("meuModal").style.display = "flex";
         }
 
-        // --- FUNÇÃO: ADICIONAR NO BANCO ---
-        window.adicionarLinha = async function () {
-            if (!verificarSenha()) return;
+        window.fecharModal = function () {
+            document.getElementById("meuModal").style.display = "none";
+        }
 
-            const nomeItem = (prompt("Digite o nome do item:") || "").trim();
-            const qtdItem = (prompt("Digite a quantidade:") || "").trim();
-            const dataItem = (prompt("Digite a data de envio (ex: DD/MM/AAAA):") || "").trim();
-            const obsItem = (prompt("Digite uma observação sobre o item:") || "").trim();
+        function limparCamposModal() {
+            document.getElementById("inputSenha").value = "";
+            document.getElementById("inputNome").value = "";
+            document.getElementById("inputQtd").value = "";
+            document.getElementById("inputData").value = "";
+            document.getElementById("inputPrazo").value = "";
+            document.getElementById("inputObs").value = "";
+        }
 
-            if (!nomeItem || !qtdItem || !dataItem || !obsItem) {
-                alert("Erro: Todos os 4 campos são obrigatórios!");
+        // --- CONTROLE DA JANELA INTERNA (MODAL EXCLUSÃO EXCLUSIVA) ---
+        function abrirModalExcluir(id) {
+            idItemParaExcluir = id;
+            document.getElementById("inputSenhaExcluir").value = ""; // Limpa a senha anterior
+            document.getElementById("modalExcluir").style.display = "flex";
+        }
+
+        window.fecharModalExcluir = function () {
+            document.getElementById("modalExcluir").style.display = "none";
+            idItemParaExcluir = null;
+        }
+
+        // --- SALVAR MUDANÇAS (ADICIONAR OU EDITAR) ---
+        document.getElementById("btnConfirmarForm").onclick = async function () {
+            const senha = document.getElementById("inputSenha").value;
+
+            if (senha !== SENHA_MASTER) {
+                alert("Senha incorreta! Operação negada.");
                 return;
             }
 
-            try {
-                await addDoc(itensColecao, {
-                    nome: nomeItem,
-                    quantidade: qtdItem,
-                    dataEnvio: dataItem,
-                    observacao: obsItem
-                });
-            } catch (e) {
-                console.error("Erro ao adicionar item: ", e);
+            const nome = document.getElementById("inputNome").value.trim();
+            const qtd = document.getElementById("inputQtd").value.trim();
+            const dataEnvio = document.getElementById("inputData").value;
+            let prazo = document.getElementById("inputPrazo").value.trim();
+            const obs = document.getElementById("inputObs").value.trim();
+
+            if (!nome || !qtd || !dataEnvio || !obs) {
+                alert("Erro: Itens, Quantidade, Data e Observação são obrigatórios!");
+                return;
             }
-        }
 
-        // --- FUNÇÃO: EDITAR NO BANCO (PROTEGIDA POR SENHA) ---
-        async function editarLinhaDoBanco(id, linhaElemento) {
-            if (!verificarSenha()) return;
-
-            const nomeAtual = linhaElemento.cells[0].textContent;
-            const qtdAtual = linhaElemento.cells[1].textContent;
-            const dataAtual = linhaElemento.cells[2].textContent;
-            const obsAtual = linhaElemento.cells[3].textContent;
-
-            const novoNome = prompt("Editar nome do item:", nomeAtual) || nomeAtual;
-            const novaQtd = prompt("Editar quantidade:", qtdAtual) || qtdAtual;
-            const novaData = prompt("Editar data de envio:", dataAtual) || dataAtual;
-            const novaObs = prompt("Editar observação:", obsAtual) || obsAtual;
+            if (!prazo) {
+                prazo = "indefinido";
+            }
 
             try {
-                const documentoRef = doc(db, "itensTabela", id);
-                await updateDoc(documentoRef, {
-                    nome: novoNome,
-                    quantidade: novaQtd,
-                    dataEnvio: novaData,
-                    observacao: novaObs
-                });
+                if (idItemSendoEditado === null) {
+                    await addDoc(itensColecao, {
+                        nome: nome,
+                        quantidade: qtd,
+                        dataEnvio: dataEnvio,
+                        prazo: prazo,
+                        observacao: obs
+                    });
+                } else {
+                    const documentoRef = doc(db, "itensTabela", idItemSendoEditado);
+                    await updateDoc(documentoRef, {
+                        nome: nome,
+                        quantidade: qtd,
+                        dataEnvio: dataEnvio,
+                        prazo: prazo,
+                        observacao: obs
+                    });
+                }
+                fecharModal();
             } catch (e) {
-                console.error("Erro ao atualizar o item: ", e);
+                console.error("Erro ao salvar documento: ", e);
             }
-        }
+        };
 
-        // --- FUNÇÃO: DELETAR NO BANCO ---
-        async function deletarLinhaDoBanco(id) {
-            if (!verificarSenha()) return;
+        // --- EVENTO DO BOTÃO CONFIRMAR EXCLUSÃO (DENTRO DO MODAL) ---
+        document.getElementById("btnConfirmarDeletar").onclick = async function () {
+            const senhaDigitada = document.getElementById("inputSenhaExcluir").value;
 
-            try {
-                await deleteDoc(doc(db, "itensTabela", id));
-            } catch (e) {
-                console.error("Erro ao deletar item: ", e);
+            if (!senhaDigitada) {
+                alert("Por favor, digite a senha master para autorizar.");
+                return;
             }
+
+            if (senhaDigitada !== SENHA_MASTER) {
+                alert("Senha incorreta! Operação negada.");
+                return;
+            }
+
+            if (idItemParaExcluir) {
+                try {
+                    await deleteDoc(doc(db, "itensTabela", idItemParaExcluir));
+                    fecharModalExcluir();
+                } catch (e) {
+                    console.error("Erro ao deletar item: ", e);
+                    alert("Erro ao tentar excluir o item do banco.");
+                }
+            }
+        };
+
+        // --- PREPARAR EDIÇÃO NO MODAL ---
+        function abrirModalEdicao(id, linhaElemento) {
+            idItemSendoEditado = id;
+            document.getElementById("modalTitulo").textContent = "Editar Item Existente";
+            limparCamposModal();
+
+            document.getElementById("inputNome").value = linhaElemento.cells[0].textContent;
+            document.getElementById("inputQtd").value = linhaElemento.cells[1].textContent;
+            document.getElementById("inputPrazo").value = linhaElemento.cells[3].textContent === "indefinido" ? "" : linhaElemento.cells[3].textContent;
+            document.getElementById("inputObs").value = linhaElemento.cells[4].textContent;
+
+            const textoData = linhaElemento.cells[2].textContent;
+            if (textoData.includes("/")) {
+                const partes = textoData.split("/");
+                document.getElementById("inputData").value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            }
+
+            document.getElementById("meuModal").style.display = "flex";
         }
 
         // --- VINCULAR CLIQUES DOS BOTÕES ---
         function configurarBotoesAcoes() {
-            document.querySelectorAll(".btn-excluir").forEach(botao => {
+            document.querySelectorAll("#minhaTabela .btn-excluir").forEach(botao => {
                 botao.onclick = function () {
                     const id = this.getAttribute("data-id");
-                    deletarLinhaDoBanco(id);
+                    abrirModalExcluir(id); // Agora abre o modal customizado em vez do prompt
                 };
             });
 
-            document.querySelectorAll(".btn-editar").forEach(botao => {
+            document.querySelectorAll("#minhaTabela .btn-editar").forEach(botao => {
                 botao.onclick = function () {
                     const id = this.getAttribute("data-id");
                     const linha = this.closest("tr");
-                    editarLinhaDoBanco(id, linha);
+                    abrirModalEdicao(id, linha);
                 };
             });
         }
     </script>
-
 </body>
 
 </html>
