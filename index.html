@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>zincagem topfuso</title>
+</head>
+
+<body>
+
+    <div id="topo">
+        <img id="logo" src="imagens/logossemfundo.png" alt="">
+    </div>
+
+    <div id="fundotabela">
+        <section id="tabela">
+
+            <div>
+                <table id="minhaTabela">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantidade</th>
+                            <th>Data</th>
+                            <th>Observação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas alimentadas pelo Firebase -->
+                    </tbody>
+                </table>
+
+                <button class="btn-adicionar" id="adicionar" onclick="adicionarLinha()">Adicionar Item</button>
+            </div>
+        </section>
+    </div>
+
+    <script type="module">
+        // LINKS OFICIAIS E GARANTIDOS DO FIREBASE V10
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            deleteDoc,
+            doc,
+            onSnapshot,
+            updateDoc
+        } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        // Suas credenciais do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQV8hQ8ijySu2x531DLyrajZzm3-TiF3M",
+            authDomain: "topfuso-c0e54.firebaseapp.com",
+            projectId: "topfuso-c0e54",
+            storageBucket: "topfuso-c0e54.firebasestorage.app",
+            messagingSenderId: "682032428181",
+            appId: "1:682032428181:web:76e33628dbd2282dda579c",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ATENÇÃO: Certifique-se de que no seu painel do Firebase a coleção se chama exatamente "itensTabela"
+        const itensColecao = collection(db, "itensTabela");
+
+        // --- FUNÇÃO: ESCUTAR O BANCO EM TEMPO REAL ---
+        onSnapshot(itensColecao, (snapshot) => {
+            const tabelaBody = document.getElementById("minhaTabela").getElementsByTagName('tbody')[0];
+            tabelaBody.innerHTML = ""; // Limpa a tabela (inclusive a linha de exemplo do HTML)
+
+            // LOG DE TESTE: Abre o F12 para ver se o Firebase está localizando documentos
+            console.log("Total de itens encontrados no banco: ", snapshot.size);
+
+            if (snapshot.size === 0) {
+                // Se o banco estiver vazio, ele cria uma linha avisando, em vez de deixar sumir tudo
+                const novaLinha = tabelaBody.insertRow();
+                const celulaAviso = novaLinha.insertCell(0);
+                celulaAviso.colSpan = 5;
+                celulaAviso.textContent = "Nenhum item encontrado no banco de dados. Clique em Adicionar!";
+                celulaAviso.style.textAlign = "center";
+                return;
+            }
+
+            snapshot.forEach((documento) => {
+                const dados = documento.data();
+                const idDoItem = documento.id;
+
+                const novaLinha = tabelaBody.insertRow();
+
+                const celulaNome = novaLinha.insertCell(0);
+                const celulaQuantidade = novaLinha.insertCell(1);
+                const celulaData = novaLinha.insertCell(2);
+                const celulaObservacao = novaLinha.insertCell(3);
+                const celulaAcoes = novaLinha.insertCell(4);
+
+                celulaNome.textContent = dados.nome || "-";
+                celulaQuantidade.textContent = dados.quantidade || "-";
+                celulaData.textContent = dados.dataEnvio || "-";
+                celulaObservacao.textContent = dados.observacao || "-";
+
+                celulaAcoes.innerHTML = `
+                    <button class="btn-editar" data-id="${idDoItem}">Editar</button>
+                    <button class="btn-excluir" data-id="${idDoItem}">Excluir</button>
+                `;
+            });
+
+            configurarBotoesAcoes();
+        });
+
+        const SENHA_MASTER = "1234";
+
+        function verificarSenha() {
+            const senhaDigitada = prompt("Esta ação é restrita. Digite a senha para continuar:");
+            if (senhaDigitada === null) return false;
+
+            if (senhaDigitada === SENHA_MASTER) {
+                return true;
+            } else {
+                alert("Senha incorreta! Acesso negado.");
+                return false;
+            }
+        }
+
+        // --- FUNÇÃO: ADICIONAR NO BANCO ---
+        window.adicionarLinha = async function () {
+            if (!verificarSenha()) return;
+
+            const nomeItem = (prompt("Digite o nome do item:") || "").trim();
+            const qtdItem = (prompt("Digite a quantidade:") || "").trim();
+            const dataItem = (prompt("Digite a data de envio (ex: DD/MM/AAAA):") || "").trim();
+            const obsItem = (prompt("Digite uma observação sobre o item:") || "").trim();
+
+            if (!nomeItem || !qtdItem || !dataItem || !obsItem) {
+                alert("Erro: Todos os 4 campos são obrigatórios!");
+                return;
+            }
+
+            try {
+                await addDoc(itensColecao, {
+                    nome: nomeItem,
+                    quantidade: qtdItem,
+                    dataEnvio: dataItem,
+                    observacao: obsItem
+                });
+            } catch (e) {
+                console.error("Erro ao adicionar item: ", e);
+            }
+        }
+
+        // --- FUNÇÃO: EDITAR NO BANCO (PROTEGIDA POR SENHA) ---
+        async function editarLinhaDoBanco(id, linhaElemento) {
+            if (!verificarSenha()) return;
+
+            const nomeAtual = linhaElemento.cells[0].textContent;
+            const qtdAtual = linhaElemento.cells[1].textContent;
+            const dataAtual = linhaElemento.cells[2].textContent;
+            const obsAtual = linhaElemento.cells[3].textContent;
+
+            const novoNome = prompt("Editar nome do item:", nomeAtual) || nomeAtual;
+            const novaQtd = prompt("Editar quantidade:", qtdAtual) || qtdAtual;
+            const novaData = prompt("Editar data de envio:", dataAtual) || dataAtual;
+            const novaObs = prompt("Editar observação:", obsAtual) || obsAtual;
+
+            try {
+                const documentoRef = doc(db, "itensTabela", id);
+                await updateDoc(documentoRef, {
+                    nome: novoNome,
+                    quantidade: novaQtd,
+                    dataEnvio: novaData,
+                    observacao: novaObs
+                });
+            } catch (e) {
+                console.error("Erro ao atualizar o item: ", e);
+            }
+        }
+
+        // --- FUNÇÃO: DELETAR NO BANCO ---
+        async function deletarLinhaDoBanco(id) {
+            if (!verificarSenha()) return;
+
+            try {
+                await deleteDoc(doc(db, "itensTabela", id));
+            } catch (e) {
+                console.error("Erro ao deletar item: ", e);
+            }
+        }
+
+        // --- VINCULAR CLIQUES DOS BOTÕES ---
+        function configurarBotoesAcoes() {
+            document.querySelectorAll(".btn-excluir").forEach(botao => {
+                botao.onclick = function () {
+                    const id = this.getAttribute("data-id");
+                    deletarLinhaDoBanco(id);
+                };
+            });
+
+            document.querySelectorAll(".btn-editar").forEach(botao => {
+                botao.onclick = function () {
+                    const id = this.getAttribute("data-id");
+                    const linha = this.closest("tr");
+                    editarLinhaDoBanco(id, linha);
+                };
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,120 @@
+* {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  padding: 0%;
+}
+
+body {
+  background-image: url(imagens/fundo.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+#topo {
+  display: grid;
+  place-items: center;
+  height: 180px;
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+#logo {
+  width: 25%;
+}
+
+#botoes {
+  margin-top: 100px;
+  float: right;
+  width: 100px;
+  height: 42%;
+}
+
+#fundotabela {
+  padding-left: 390px;
+  padding-right: 390px;
+}
+
+#tabela {
+  display: grid;
+  place-items: center;
+  float: top;
+  width: 700px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Elimina aquelas bordas duplas antigas */
+  margin: 20px 0;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden; /* Garante que as bordas arredondadas funcionem */
+}
+
+thead {
+  background-color: #000000; /* Cor principal da tabela */
+  color: #ffffff;
+  text-align: left;
+  font-weight: bold;
+}
+
+/* Espaçamento e divisões das células */
+th {
+  padding: 12px 15px; /* Dá "respiro" para o texto não ficar colado */
+  border-bottom: 1px solid #dddddd; /* Linha sutil divisória */
+}
+
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #dddddd;
+  color: aliceblue;
+}
+
+/* Efeito zebrado (linhas alternadas com cores diferentes) */
+tbody tr:nth-of-type(even) {
+  color: #ffffff;
+}
+
+/* Destaca a linha quando você passa o mouse por cima */
+tbody tr:hover {
+  background-color: #f1f1f1;
+  background-color: rgba(
+    185,
+    218,
+    0,
+    0.489
+  ); /* Um leve verde ao passar o mouse */
+}
+
+/* Estilização básica dos botões dentro da tabela */
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+/* Botão de excluir (vermelho) */
+.btn-excluir {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+.btn-excluir:hover {
+  background-color: #cc0000;
+}
+
+/* Botão de adicionar (verde/azul) */
+#adicionar {
+  background-color: #009879;
+  color: white;
+  padding: 10px 20px;
+}
+
+#adicionar:hover {
+  background-color: #007a61;
+}
