@@ -16,9 +16,9 @@ body {
 #topo {
   display: grid;
   place-items: center;
-  height: 180px;
-  padding-left: 20%;
-  padding-right: 20%;
+  height: auto; /* Mudado de 180px fixo para auto para não cortar conteúdo */
+  min-height: 120px;
+  padding: 20px 10%; /* Ajustado o padding lateral para ser responsivo */
 }
 
 #logo {
@@ -26,35 +26,36 @@ body {
   min-width: 150px;
 }
 
+/* Centraliza os botões no mobile e remove o float problemático */
 #botoes {
-  margin-top: 100px;
-  float: right;
-  width: 100px;
-  height: 42%;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
 }
 
 #fundotabela {
-  padding-left: 200px;
-  padding-right: 200px;
+  padding-left: 5%; /* Mudado de 200px fixo para 5% para se adaptar à tela */
+  padding-right: 5%;
   width: 100%;
 }
 
 #tabela {
   margin: 0 auto;
   max-width: 900px;
-  width: 80%;
+  width: 100%; /* Mudado de 80% para 100% para aproveitar o espaço */
 }
 
 #tabela > div {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: auto; /* Cria barra de rolagem horizontal se a tabela for maior que a tela */
   -webkit-overflow-scrolling: touch;
   margin-bottom: 15px;
 }
 
 #btnBaixarPDF {
   background-color: #0056b3;
-  margin-right: 10px;
 }
 
 table {
@@ -62,7 +63,7 @@ table {
   border-collapse: collapse;
   margin: 20px 0;
   font-family: sans-serif;
-  min-width: 600px;
+  min-width: 500px; /* Reduzido levemente para evitar rolagem excessiva */
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
@@ -86,7 +87,7 @@ td {
   color: aliceblue;
 }
 
-/* Efeito zebrado (linhas alternadas com cores diferentes) */
+/* Efeito zebrado */
 tbody tr:nth-of-type(even) {
   color: #ffffff;
 }
@@ -97,7 +98,7 @@ tbody tr:hover {
 }
 
 button {
-  padding: 6px 12px;
+  padding: 8px 16px; /* Aumentado levemente para facilitar o toque no celular */
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -108,7 +109,6 @@ button {
 .btn-editar {
   background-color: white;
   color: black;
-  margin-right: 5px;
 }
 
 .btn-editar:hover {
@@ -127,7 +127,6 @@ button {
 #adicionar {
   background-color: #009879;
   color: white;
-  padding: 10px 20px;
 }
 
 #adicionar:hover {
@@ -136,7 +135,7 @@ button {
 
 /* --- DESIGN MODERNO DO MODAL --- */
 .modal-background {
-  display: none; /* Começa escondido */
+  display: none;
   position: fixed;
   top: 0;
   left: 0;
@@ -180,7 +179,6 @@ button {
   color: #ccc;
 }
 
-/* inputs de texto e calendário */
 .form-grupo input {
   width: 100%;
   padding: 10px;
@@ -194,7 +192,7 @@ button {
 }
 
 .form-grupo input:focus {
-  border-color: #009879; /* Destaca a borda ao clicar */
+  border-color: #009879;
 }
 
 .modal-botoes {
@@ -207,8 +205,6 @@ button {
 .btn-salvar {
   background-color: #009879;
   color: white;
-  padding: 10px 20px;
-  font-size: 15px;
 }
 
 .btn-salvar:hover {
@@ -218,37 +214,58 @@ button {
 .btn-cancelar {
   background-color: #444;
   color: white;
-  padding: 10px 20px;
-  font-size: 15px;
 }
 
 .btn-cancelar:hover {
   background-color: #333;
 }
 
-/* --- AJUSTE FINO PARA CELULARES --- */
-@media (max-width: 480px) {
+/* --- AJUSTES EXCLUSIVOS PARA SMARTPHONES (Telas até 768px) --- */
+@media (max-width: 768px) {
+  #topo {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+  /* Os botões do topo ficam um embaixo do outro ou lado a lado certinho */
+  #botoes {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 15px;
+  }
+
+  #botoes button {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+
+  /* Faz a tabela dar scroll horizontal suave no celular sem quebrar o layout */
   #tabela {
-    width: 100%; /* Faz a tabela aproveitar melhor as bordas da tela */
+    width: 100%;
   }
 
   table {
-    min-width: unset; /* Remove o mínimo de 600px para que ela possa encolher um pouco */
-    font-size: 13px; /* Diminui a fonte levemente (o padrão era 16px) */
+    min-width: 500px;
+    font-size: 14px;
   }
 
   th,
   td {
-    padding: 8px 6px; /* Reduz o espaçamento interno para as colunas respirarem melhor */
+    padding: 10px 8px; /* Diminui o espaçamento para caber mais dados na tela */
   }
 
-  /* Ajuste rápido para os botões de ação não ficarem gigantes no celular */
-  .btn-editar,
-  .btn-excluir {
-    display: inline-block;
-    width: auto;
-    font-size: 12px;
-    padding: 4px 8px;
-    margin: 2px;
+  /* Modal ocupa quase a tela toda no celular para facilitar a digitação */
+  .modal-conteudo {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  .modal-botoes {
+    flex-direction: column-reverse; /* Botão de salvar fica no topo para fácil clique */
+    gap: 8px;
+  }
+
+  .modal-botoes button {
+    width: 100%; /* Botões do modal cheios no mobile */
   }
 }
