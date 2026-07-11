@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>compras topfuso</title>
+    <link rel="apple-touch-icon" href="imagens/logocomfundo.png">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="imagens/logocomfundo.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="imagens/logocomfundo.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="imagens/logocomfundo.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+    <div id="topo">
+        <img id="logo" src="imagens\logossemfundo.png" alt="">
+    </div>
+
+    <div id="fundotabela">
+        <section id="tabela">
+            <div>
+                <!-- ID alterado para focar na sua nova tabela independente -->
+                <table id="tabelaVendas">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantidade</th>
+                            <th>Data</th>
+                            <th>Observação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+
+                <button class="btn-adicionar" id="adicionar" onclick="abrirModalCadastro()">Adicionar Item</button>
+                <!-- Coloque este botão onde achar melhor no seu HTML, perto da sua tabela -->
+                <button class="btn-salvar" id="btnBaixarPDF" onclick="baixarTabelaPDF()">
+                    Baixar PDF
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <div id="meuModal" class="modal-background">
+        <div class="modal-conteudo">
+            <h3 id="modalTitulo">Adicionar Novo Item</h3>
+
+            <!-- O campo de Senha Master foi totalmente removido daqui -->
+
+            <div class="form-grupo">
+                <label for="inputNome">Nome do Item:</label>
+                <input type="text" id="inputNome">
+            </div>
+            <div class="form-grupo">
+                <label for="inputQtd">Quantidade (Opcional):</label>
+                <input type="text" id="inputQtd" placeholder="Deixe vazio se não houver">
+            </div>
+            <div class="form-grupo">
+                <label for="inputData">Data de Envio:</label>
+                <input type="date" id="inputData">
+            </div>
+
+            <!-- O campo de Prazo foi totalmente removido daqui -->
+
+            <div class="form-grupo">
+                <label for="inputObs">Observação (Opcional):</label>
+                <input type="text" id="inputObs" placeholder="Deixe vazio para 'estoque'">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-salvar" id="btnConfirmarForm">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            deleteDoc,
+            doc,
+            onSnapshot,
+            updateDoc
+        } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQV8hQ8ijySu2x531DLyrajZzm3-TiF3M",
+            authDomain: "topfuso-c0e54.firebaseapp.com",
+            projectId: "topfuso-c0e54",
+            storageBucket: "topfuso-c0e54.firebasestorage.app",
+            messagingSenderId: "682032428181",
+            appId: "1:682032428181:web:76e33628dbd2282dda579c",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Sua NOVA tabela totalmente independente (Custo Zero)
+        const novaColecaoIndependente = collection(db, "vendas");
+
+        // --- FUNÇÃO PARA BAIXAR O PDF DA TABELA ---
+        window.baixarTabelaPDF = function () {
+            // Acessa o jsPDF carregado globalmente pelas tags de script externas
+            const { jsPDF } = window.jspdf;
+            const pdfDoc = new jsPDF();
+
+            // Adiciona um título ao documento (Alterado para Compras)
+            pdfDoc.setFont("Helvetica", "bold");
+            pdfDoc.setFontSize(18);
+            pdfDoc.text("Relatório de Itens - Compras", 14, 22);
+
+            // Adiciona a data atual no cabeçalho
+            pdfDoc.setFont("Helvetica", "normal");
+            pdfDoc.setFontSize(10);
+            pdfDoc.setTextColor(100);
+            const dataHoje = new Date().toLocaleDateString('pt-BR');
+            pdfDoc.text(`Gerado em: ${dataHoje}`, 14, 30);
+
+            // Converte a tabela HTML ignorando a coluna de Ações
+            pdfDoc.autoTable({
+                html: '#tabelaVendas',
+                startY: 35,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0] }, // Preto #000
+                columns: [
+                    { header: 'Item', dataKey: '0' },
+                    { header: 'Quantidade', dataKey: '1' },
+                    { header: 'Data', dataKey: '2' },
+                    { header: 'Observação', dataKey: '3' }
+                ],
+                styles: { font: "Helvetica", fontSize: 10 },
+                margin: { top: 35, left: 14, right: 14 }
+            });
+
+            // Faz o download automático do arquivo (Nome alterado para compras)
+            pdfDoc.save(`relatorio-compras-${dataHoje.replace(/\//g, '-')}.pdf`);
+        };
+
+        let idItemSendoEditado = null; // Controla se estamos adicionando ou editando
+
+        // --- FUNÇÃO: ESCUTAR O BANCO EM TEMPO REAL ---
+        onSnapshot(novaColecaoIndependente, (snapshot) => {
+            const tabelaBody = document.getElementById("tabelaVendas").getElementsByTagName('tbody')[0];
+            tabelaBody.innerHTML = "";
+
+            if (snapshot.size === 0) {
+                const novaLinha = tabelaBody.insertRow();
+                const celulaAviso = novaLinha.insertCell(0);
+                celulaAviso.colSpan = 5;
+                celulaAviso.textContent = "Nenhum item encontrado no banco de dados. Clique em Adicionar!";
+                celulaAviso.style.textAlign = "center";
+                return;
+            }
+
+            snapshot.forEach((docSnap) => {
+                const dados = docSnap.data();
+                const id = docSnap.id;
+
+                const novaLinha = tabelaBody.insertRow();
+
+                let dataFormatada = "";
+                if (dados.data) {
+                    const partes = dados.data.split("-");
+                    if (partes.length === 3) {
+                        dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    } else {
+                        dataFormatada = dados.data;
+                    }
+                }
+
+                novaLinha.insertCell(0).textContent = dados.nome || "";
+                novaLinha.insertCell(1).textContent = dados.quantidade || "Vazio";
+                novaLinha.insertCell(2).textContent = dataFormatada;
+                novaLinha.insertCell(3).textContent = dados.observacao || "estoque";
+
+                const celulaAcoes = novaLinha.insertCell(4);
+
+                const btnEditar = document.createElement("button");
+                btnEditar.className = "btn-editar";
+                btnEditar.textContent = "Editar";
+                btnEditar.onclick = () => carregarDadosParaEditar(id, dados);
+
+                const btnExcluir = document.createElement("button");
+                btnExcluir.className = "btn-excluir";
+                btnExcluir.textContent = "Excluir";
+                btnExcluir.onclick = () => excluirItemDireto(id);
+
+                celulaAcoes.appendChild(btnEditar);
+                celulaAcoes.appendChild(btnExcluir);
+            });
+        });
+
+        // --- FUNÇÃO: SALVAR OU ATUALIZAR DADOS ---
+        document.getElementById("btnConfirmarForm").onclick = async function () {
+            const nome = document.getElementById("inputNome").value.trim();
+            const quantidade = document.getElementById("inputQtd").value.trim();
+            const data = document.getElementById("inputData").value;
+            let observacao = document.getElementById("inputObs").value.trim();
+
+            if (!nome || !data) {
+                alert("Por favor, preencha os campos obrigatórios: Nome do Item e Data!");
+                return;
+            }
+
+            if (observacao === "") {
+                observacao = "estoque";
+            }
+
+            const itemDados = {
+                nome: nome,
+                quantidade: quantidade,
+                data: data,
+                observacao: observacao
+            };
+
+            try {
+                if (idItemSendoEditado) {
+                    const documentoRef = doc(db, "vendas", idItemSendoEditado);
+                    await updateDoc(documentoRef, itemDados);
+                    idItemSendoEditado = null;
+                } else {
+                    await addDoc(novaColecaoIndependente, itemDados);
+                }
+                fecharModal();
+            } catch (erro) {
+                console.error("Erro ao salvar documento: ", erro);
+                alert("Ocorreu um erro ao salvar o item.");
+            }
+        };
+
+        // --- FUNÇÃO: EXCLUSÃO DIRETA ---
+        async function excluirItemDireto(id) {
+            if (confirm("Tem certeza absoluta de que deseja excluir este item permanentemente?")) {
+                try {
+                    const documentoRef = doc(db, "vendas", id);
+                    await deleteDoc(documentoRef);
+                } catch (erro) {
+                    console.error("Erro ao deletar: ", erro);
+                    alert("Não foi possível excluir o item.");
+                }
+            }
+        }
+
+        // --- FUNÇÕES DE CONTROLE DOS MODAIS ---
+        window.abrirModalCadastro = function () {
+            idItemSendoEditado = null;
+            document.getElementById("modalTitulo").textContent = "Adicionar Novo Item";
+            document.getElementById("inputNome").value = "";
+            document.getElementById("inputQtd").value = "";
+            document.getElementById("inputData").value = "";
+            document.getElementById("inputObs").value = "";
+            document.getElementById("meuModal").style.display = "flex";
+        };
+
+        function carregarDadosParaEditar(id, dados) {
+            idItemSendoEditado = id;
+            document.getElementById("modalTitulo").textContent = "Editar Item";
+            document.getElementById("inputNome").value = dados.nome || "";
+            document.getElementById("inputQtd").value = dados.quantidade || "";
+            document.getElementById("inputData").value = dados.data || "";
+            document.getElementById("inputObs").value = dados.observacao === "estoque" ? "" : dados.observacao;
+            document.getElementById("meuModal").style.display = "flex";
+        }
+
+        window.fecharModal = function () {
+            document.getElementById("meuModal").style.display = "none";
+            idItemSendoEditado = null;
+        };
+    </script>
+</body>
+
+</html>

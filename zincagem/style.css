@@ -1,0 +1,318 @@
+* {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  padding: 0%;
+  margin: 0%;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url(imagens/fundo.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+#topo {
+  display: grid;
+  place-items: center;
+  height: 180px;
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+#logo {
+  width: 25%;
+  min-width: 150px;
+}
+
+#botoes {
+  margin-top: 100px;
+  float: right;
+  width: 100px;
+  height: 42%;
+}
+
+/* AJUSTADO: Diminuí um pouco o recuo lateral no PC para acomodar a nova coluna de Prazo */
+#fundotabela {
+  padding-left: 200px;
+  padding-right: 200px;
+  width: 100%;
+}
+
+/* AJUSTADO: Aumentei a largura máxima de 700px para 900px para a tabela respirar melhor */
+#tabela {
+  margin: 0 auto;
+  max-width: 900px;
+  width: 100%;
+}
+
+#tabela > div {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Elimina aquelas bordas duplas antigas */
+  margin: 20px 0;
+  font-family: sans-serif;
+  min-width: 600px; /* Aumentado para manter um tamanho confortável com a nova coluna */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden; /* Garante que as bordas arredondadas funcionem */
+}
+
+thead {
+  background-color: #000000;
+  color: #ffffff;
+  text-align: left;
+  font-weight: bold;
+}
+
+th {
+  padding: 12px 15px;
+  border-bottom: 1px solid #dddddd;
+}
+
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #dddddd;
+  color: aliceblue;
+}
+
+/* Efeito zebrado (linhas alternadas com cores diferentes) */
+tbody tr:nth-of-type(even) {
+  color: #ffffff;
+}
+
+tbody tr:hover {
+  background-color: rgba(189, 189, 189, 0.275);
+  border: 1px solid rgba(189, 189, 189, 0.69);
+}
+
+/* Quando o prazo for HOJE -> Fundo Laranja */
+table tbody tr.prazo-hoje td {
+  background-color: #ff990065 !important;
+  color: #ffffff !important; /* Texto branco para contraste */
+}
+
+/* Quando o prazo já PASSOU -> Fundo Vermelho */
+table tbody tr.prazo-vencido td {
+  background-color: #f4433666 !important;
+  color: #ffffff !important; /* Texto branco para contraste */
+}
+
+/* Garante que os botões dentro dessas linhas fiquem legíveis */
+table tbody tr.prazo-hoje .btn-excluir,
+table tbody tr.prazo-vencido .btn-excluir {
+  background-color: #ff4d4d !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
+}
+
+table tbody tr.prazo-hoje .btn-excluir:hover {
+  background-color: #cc0000 !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
+}
+
+table tbody tr.prazo-vencido .btn-excluir:hover {
+  background-color: #cc0000 !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
+}
+
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-editar {
+  background-color: white;
+  color: black;
+  margin-right: 5px;
+}
+
+.btn-editar:hover {
+  background-color: rgb(172, 172, 172);
+}
+
+.btn-excluir {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+.btn-excluir:hover {
+  background-color: #cc0000;
+}
+
+#adicionar {
+  background-color: #009879;
+  color: white;
+  padding: 10px 20px;
+}
+
+#adicionar:hover {
+  background-color: #007a61;
+}
+
+/* --- MODAL DE EXCLUSÃO --- */
+
+/* Limita a largura do modal para ficar mais compacto que o de cadastro */
+.modal-pequeno {
+  max-width: 380px;
+}
+
+.titulo-excluir {
+  color: #ff4d4d !important;
+  border-color: #ff4d4d !important;
+}
+
+.texto-aviso {
+  color: #ccc;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-family: sans-serif;
+}
+
+.padding-largo {
+  padding: 10px 20px;
+}
+
+/* --- FLUTUANTE (DESIGN MODERNO) --- */
+.modal-background {
+  display: none; /* Começa escondido */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-conteudo {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+}
+
+.modal-conteudo h3 {
+  margin-bottom: 20px;
+  color: #009879;
+  font-size: 22px;
+  border-bottom: 2px solid #009879;
+  padding-bottom: 8px;
+}
+
+.form-grupo {
+  margin-bottom: 16px;
+}
+
+.form-grupo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #ccc;
+}
+
+/* inputs de texto, senha e calendário */
+.form-grupo input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #2d2d2d;
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-grupo input:focus {
+  border-color: #009879; /* Destaca a borda ao clicar */
+}
+
+/* Estilo específico para o campo de senha (aviso de segurança) */
+.form-grupo input[type="password"] {
+  border-left: 4px solid #ff4d4d;
+}
+
+.modal-botoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-salvar {
+  background-color: #009879;
+  color: white;
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+.btn-salvar:hover {
+  background-color: #007a61;
+}
+
+.btn-cancelar {
+  background-color: #444;
+  color: white;
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+.btn-cancelar:hover {
+  background-color: #333;
+}
+
+/* --- ADAPTAÇÃO EXCLUSIVA PARA CELULARES (TELAS ATÉ 1100px) --- */
+@media (max-width: 1100px) {
+  #fundotabela {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  #topo {
+    padding-left: 5%;
+    padding-right: 5%;
+    height: auto;
+    padding-top: 20px;
+  }
+
+  #logo {
+    width: 50%;
+  }
+
+  .btn-editar,
+  .btn-excluir {
+    display: block;
+    width: 100%;
+    margin: 4px 0;
+    text-align: center;
+  }
+
+  #adicionar {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 14px;
+  }
+}
