@@ -89,7 +89,40 @@ tbody tr:nth-of-type(even) {
 }
 
 tbody tr:hover {
-  background-color: rgba(185, 218, 0, 0.414);
+  background-color: rgba(189, 189, 189, 0.275);
+  border: 1px solid rgba(189, 189, 189, 0.69);
+}
+
+/* Quando o prazo for HOJE -> Fundo Laranja */
+table tbody tr.prazo-hoje td {
+  background-color: #ff990065 !important;
+  color: #ffffff !important; /* Texto branco para contraste */
+}
+
+/* Quando o prazo já PASSOU -> Fundo Vermelho */
+table tbody tr.prazo-vencido td {
+  background-color: #f4433666 !important;
+  color: #ffffff !important; /* Texto branco para contraste */
+}
+
+/* Garante que os botões dentro dessas linhas fiquem legíveis */
+table tbody tr.prazo-hoje .btn-excluir,
+table tbody tr.prazo-vencido .btn-excluir {
+  background-color: #ff4d4d !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
+}
+
+table tbody tr.prazo-hoje .btn-excluir:hover {
+  background-color: #cc0000 !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
+}
+
+table tbody tr.prazo-vencido .btn-excluir:hover {
+  background-color: #cc0000 !important;
+  color: #ffffff !important;
+  border: 1px solid #ccc !important;
 }
 
 button {

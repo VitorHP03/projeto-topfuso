@@ -66,7 +66,7 @@
             </div>
             <div class="form-grupo">
                 <label for="inputPrazo">Prazo (Opcional):</label>
-                <input type="text" id="inputPrazo" placeholder="Deixe vazio para 'indefinido'">
+                <input type="date" id="inputPrazo" placeholder="Deixe vazio para 'indefinido'">
             </div>
             <div class="form-grupo">
                 <label for="inputObs">Observação:</label>
@@ -165,20 +165,75 @@
                     dataFormatada = dados.dataEnvio || "-";
                 }
 
+                if (!dados.prazo) {
+                    dados.prazo = "-";
+                }
+
+                // CONTINUAÇÃO DA MONTAGEM DA LINHA
                 celulaNome.textContent = dados.nome || "-";
                 celulaQuantidade.textContent = dados.quantidade || "-";
                 celulaData.textContent = dataFormatada;
-                celulaPrazo.textContent = dados.prazo || "indefinido";
+
+                // Formata a exibição do prazo na tela (BR) mantendo o valor bruto no atributo
+                if (dados.prazo && dados.prazo.includes("-")) {
+                    const partes = dados.prazo.split("-");
+                    celulaPrazo.textContent = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                } else {
+                    celulaPrazo.textContent = dados.prazo || "indefinido";
+                }
+
+                celulaPrazo.classList.add("coluna-prazo");
                 celulaObservacao.textContent = dados.observacao || "-";
 
                 celulaAcoes.innerHTML = `
                     <button class="btn-editar" data-id="${idDoItem}">Editar</button>
                     <button class="btn-excluir" data-id="${idDoItem}">Excluir</button>
                 `;
-            });
 
+                // Aplica o atributo de prazo na linha (TR) para a varredura visual
+                let linhaTr = celulaNome.parentElement;
+                if (linhaTr) {
+                    linhaTr.setAttribute("data-prazo", dados.prazo);
+                }
+            }); // Fim do snapshot.forEach
+
+            // Fora do loop, após montar todas as linhas, gerencia os botões e pinta os prazos
             configurarBotoesAcoes();
-        });
+            verificarPrazos();
+        }); // Fim do onSnapshot
+
+        // --- FUNÇÃO GLOBAL: VERIFICAR PRAZOS E APLICAR CORES ---
+        function verificarPrazos() {
+            let hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            let linhas = document.querySelectorAll("table tbody tr");
+
+            linhas.forEach(linha => {
+                let prazoAttr = linha.getAttribute("data-prazo");
+
+                if (prazoAttr && prazoAttr !== "-" && prazoAttr !== "indefinido") {
+                    let dataPrazo;
+
+                    if (prazoAttr.includes("/")) {
+                        const partes = prazoAttr.split("/");
+                        dataPrazo = new Date(`${partes[2]}-${partes[1]}-${partes[0]}T00:00:00`);
+                    } else {
+                        dataPrazo = new Date(prazoAttr + "T00:00:00");
+                    }
+
+                    dataPrazo.setHours(0, 0, 0, 0);
+
+                    linha.classList.remove("prazo-hoje", "prazo-vencido");
+
+                    if (dataPrazo.getTime() === hoje.getTime()) {
+                        linha.classList.add("prazo-hoje");
+                    } else if (dataPrazo < hoje) {
+                        linha.classList.add("prazo-vencido");
+                    }
+                }
+            });
+        }
 
         // --- CONTROLE DA JANELA INTERNA (MODAL CADASTRO/EDIÇÃO) ---
         window.abrirModalCadastro = function () {
@@ -204,7 +259,7 @@
         // --- CONTROLE DA JANELA INTERNA (MODAL EXCLUSÃO EXCLUSIVA) ---
         function abrirModalExcluir(id) {
             idItemParaExcluir = id;
-            document.getElementById("inputSenhaExcluir").value = ""; // Limpa a senha anterior
+            document.getElementById("inputSenhaExcluir").value = "";
             document.getElementById("modalExcluir").style.display = "flex";
         }
 
@@ -235,6 +290,9 @@
 
             if (!prazo) {
                 prazo = "indefinido";
+            } else if (prazo.includes("/")) {
+                const partes = prazo.split("/");
+                prazo = `${partes[2]}-${partes[1]}-${partes[0]}`;
             }
 
             try {
@@ -257,6 +315,7 @@
                     });
                 }
                 fecharModal();
+                verificarPrazos();
             } catch (e) {
                 console.error("Erro ao salvar documento: ", e);
             }
@@ -312,7 +371,7 @@
             document.querySelectorAll("#minhaTabela .btn-excluir").forEach(botao => {
                 botao.onclick = function () {
                     const id = this.getAttribute("data-id");
-                    abrirModalExcluir(id); // Agora abre o modal customizado em vez do prompt
+                    abrirModalExcluir(id);
                 };
             });
 
