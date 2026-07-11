@@ -226,36 +226,29 @@ button {
   background-color: #333;
 }
 
-/* --- ADAPTAÇÃO PARA CELULARES --- */
-@media (max-width: 1100px) {
-  #fundotabela {
-    padding-left: 20px;
-    padding-right: 20px;
+/* --- AJUSTE FINO PARA CELULARES --- */
+@media (max-width: 480px) {
+  #tabela {
+    width: 100%; /* Faz a tabela aproveitar melhor as bordas da tela */
   }
 
-  #topo {
-    padding-left: 5%;
-    padding-right: 5%;
-    height: auto;
-    padding-top: 20px;
+  table {
+    min-width: unset; /* Remove o mínimo de 600px para que ela possa encolher um pouco */
+    font-size: 13px; /* Diminui a fonte levemente (o padrão era 16px) */
   }
 
-  #logo {
-    width: 50%;
+  th,
+  td {
+    padding: 8px 6px; /* Reduz o espaçamento interno para as colunas respirarem melhor */
   }
 
+  /* Ajuste rápido para os botões de ação não ficarem gigantes no celular */
   .btn-editar,
   .btn-excluir {
-    display: block;
-    width: 100%;
-    margin: 4px 0;
-    text-align: center;
-  }
-
-  #adicionar {
-    display: block;
-    width: 100%;
-    text-align: center;
-    padding: 14px;
+    display: inline-block;
+    width: auto;
+    font-size: 12px;
+    padding: 4px 8px;
+    margin: 2px;
   }
 }
