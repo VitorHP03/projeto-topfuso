@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>aguardando topfuso</title>
+    <link rel="apple-touch-icon" href="imagens/logocomfundo.png">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="imagens/logocomfundo.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="imagens/logocomfundo.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="imagens/logocomfundo.png">
+</head>
+
+<body>
+
+    <div id="topo">
+        <img id="logo" src="imagens/logossemfundo.png" alt="Logo">
+    </div>
+
+    <div id="fundotabela">
+        <section id="tabela">
+            <!-- Título fora da div de scroll para não mexer no celular -->
+            <h2 class="tabela-titulo-aguardando">Fila de Espera - Aguardando</h2>
+
+            <div class="tabela-responsiva">
+                <table id="tabelaAguardando">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantidade</th>
+                            <th>Data Original</th>
+                            <th>Observação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injeção via Firebase (Coleção Aguardando) -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE RECEBIMENTO/EXCLUSÃO -->
+    <div id="modalExcluirAguardando" class="modal-background">
+        <div class="modal-conteudo-excluir">
+            <h3 class="destruir">Confirmar Recebimento</h3>
+
+            <div class="form-grupo">
+                <p class="modal-descricao">
+                    O item chegou? Isso irá excluir permanentemente o registro da lista de aguardando.
+                </p>
+                <p id="textoItemSelecionado" class="aviso-vermelho"></p>
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalExcluir()">Cancelar</button>
+                <button class="btn-excluir" id="btnConfirmarExclusao">Dar Baixa / Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQV8hQ8ijySu2x531DLyrajZzm3-TiF3M",
+            authDomain: "topfuso-c0e54.firebaseapp.com",
+            projectId: "topfuso-c0e54",
+            storageBucket: "topfuso-c0e54.firebasestorage.app",
+            messagingSenderId: "682032428181",
+            appId: "1:682032428181:web:76e33628dbd2282dda579c",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const colecaoAguardando = collection(db, "aguardando");
+
+        let idItemParaExcluir = null;
+
+        // Escuta em tempo real a coleção de espera
+        onSnapshot(colecaoAguardando, (snapshot) => {
+            const tabelaBody = document.getElementById("tabelaAguardando").getElementsByTagName('tbody')[0];
+            tabelaBody.innerHTML = "";
+
+            if (snapshot.size === 0) {
+                const novaLinha = tabelaBody.insertRow();
+                const celulaAviso = novaLinha.insertCell(0);
+                celulaAviso.colSpan = 5;
+                celulaAviso.textContent = "Nenhum item aguardando envio no momento.";
+                celulaAviso.style.textAlign = "center";
+                return;
+            }
+
+            snapshot.forEach((docSnap) => {
+                const dados = docSnap.data();
+                const id = docSnap.id;
+                const novaLinha = tabelaBody.insertRow();
+
+                let dataFormatada = "";
+                if (dados.data) {
+                    const partes = dados.data.split("-");
+                    if (partes.length === 3) dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    else dataFormatada = dados.data;
+                }
+
+                novaLinha.insertCell(0).textContent = dados.nome || "";
+                novaLinha.insertCell(1).textContent = dados.quantidade || "Vazio";
+                novaLinha.insertCell(2).textContent = dataFormatada;
+                novaLinha.insertCell(3).textContent = dados.observacao || "estoque";
+
+                const celulaAcoes = novaLinha.insertCell(4);
+                const btnChegou = document.createElement("button");
+                btnChegou.className = "btn-excluir";
+                btnChegou.textContent = "Chegou";
+                btnChegou.onclick = () => prepararParaExcluir(id, dados.nome);
+
+                celulaAcoes.appendChild(btnChegou);
+            });
+        });
+
+        // --- CONTROLE DO MODAL DE EXCLUSÃO ---
+        function prepararParaExcluir(id, nomeItem) {
+            idItemParaExcluir = id;
+            document.getElementById("textoItemSelecionado").textContent = nomeItem || "Item sem nome";
+            document.getElementById("modalExcluirAguardando").style.display = "flex";
+        }
+        window.prepararParaExcluir = prepararParaExcluir;
+
+        window.fecharModalExcluir = function () {
+            document.getElementById("modalExcluirAguardando").style.display = "none";
+            idItemParaExcluir = null;
+        };
+
+        // Confirmação final da remoção do banco
+        document.getElementById("btnConfirmarExclusao").onclick = async function () {
+            if (!idItemParaExcluir) return;
+
+            try {
+                const documentoRef = doc(db, "aguardando", idItemParaExcluir);
+                await deleteDoc(documentoRef);
+                fecharModalExcluir();
+            } catch (erro) {
+                console.error("Erro ao deletar item: ", erro);
+                alert("Ocorreu um erro ao tentar dar baixa no item.");
+            }
+        };
+    </script>
+</body>
+
+</html>

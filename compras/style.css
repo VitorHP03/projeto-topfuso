@@ -133,6 +133,21 @@ button {
   background-color: #007a61;
 }
 
+/* Botão Comprado dentro da tabela de ações */
+.btn-comprado-tabela {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  background-color: #e68a00; /* Laranja combinando com o modal */
+  color: white;
+}
+
+.btn-comprado-tabela:hover {
+  background-color: #af6900;
+}
+
 /* --- DESIGN MODERNO DO MODAL --- */
 .modal-background {
   display: none;

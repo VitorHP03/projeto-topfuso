@@ -51,6 +51,25 @@
         </section>
     </div>
 
+    <!-- MODAL DE CONFIRMAÇÃO PARA MUDAR PARA COMPRADO -->
+    <div id="modalAguardando" class="modal-background">
+        <div class="modal-conteudo" style="max-width: 400px;">
+            <h3 class="alerta">Confirmar Compra</h3>
+
+            <div class="form-grupo">
+                <p style="color: #ccc; font-size: 15px; line-height: 1.5; margin-bottom: 5px;">
+                    Confirmar que este item foi **comprado** e movê-lo para a lista de Aguardando?
+                </p>
+                <p id="textoItemSelecionado"></p>
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalAguardando()">Cancelar</button>
+                <button class="btn-salvar" id="btnConfirmarAguardando">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="meuModal" class="modal-background">
         <div class="modal-conteudo">
             <h3 id="modalTitulo">Adicionar Novo Item</h3>
@@ -69,8 +88,6 @@
                 <label for="inputData">Data de Envio:</label>
                 <input type="date" id="inputData">
             </div>
-
-            <!-- O campo de Prazo foi totalmente removido daqui -->
 
             <div class="form-grupo">
                 <label for="inputObs">Observação (Opcional):</label>
@@ -108,33 +125,32 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Sua NOVA tabela totalmente independente (Custo Zero)
         const novaColecaoIndependente = collection(db, "vendas");
+        const colecaoAguardando = collection(db, "aguardando");
 
-        // --- FUNÇÃO PARA BAIXAR O PDF DA TABELA ---
+        let idItemSendoEditado = null;
+        let idItemParaMover = null;
+        let dadosItemParaMover = null;
+
+        // --- FUNÇÃO PARA GERAR O PDF DA TABELA ---
         window.baixarTabelaPDF = function () {
-            // Acessa o jsPDF carregado globalmente pelas tags de script externas
             const { jsPDF } = window.jspdf;
             const pdfDoc = new jsPDF();
-
-            // Adiciona um título ao documento (Alterado para Compras)
             pdfDoc.setFont("Helvetica", "bold");
             pdfDoc.setFontSize(18);
             pdfDoc.text("Relatório de Itens - Compras", 14, 22);
 
-            // Adiciona a data atual no cabeçalho
             pdfDoc.setFont("Helvetica", "normal");
             pdfDoc.setFontSize(10);
             pdfDoc.setTextColor(100);
             const dataHoje = new Date().toLocaleDateString('pt-BR');
             pdfDoc.text(`Gerado em: ${dataHoje}`, 14, 30);
 
-            // Converte a tabela HTML ignorando a coluna de Ações
             pdfDoc.autoTable({
                 html: '#tabelaVendas',
                 startY: 35,
                 theme: 'striped',
-                headStyles: { fillColor: [0, 0, 0] }, // Preto #000
+                headStyles: { fillColor: [0, 0, 0] },
                 columns: [
                     { header: 'Item', dataKey: '0' },
                     { header: 'Quantidade', dataKey: '1' },
@@ -144,14 +160,10 @@
                 styles: { font: "Helvetica", fontSize: 10 },
                 margin: { top: 35, left: 14, right: 14 }
             });
-
-            // Faz o download automático do arquivo (Nome alterado para compras)
             pdfDoc.save(`relatorio-compras-${dataHoje.replace(/\//g, '-')}.pdf`);
         };
 
-        let idItemSendoEditado = null; // Controla se estamos adicionando ou editando
-
-        // --- FUNÇÃO: ESCUTAR O BANCO EM TEMPO REAL ---
+        // --- ESCUTAR BANCO (TEMPO REAL) ---
         onSnapshot(novaColecaoIndependente, (snapshot) => {
             const tabelaBody = document.getElementById("tabelaVendas").getElementsByTagName('tbody')[0];
             tabelaBody.innerHTML = "";
@@ -168,17 +180,13 @@
             snapshot.forEach((docSnap) => {
                 const dados = docSnap.data();
                 const id = docSnap.id;
-
                 const novaLinha = tabelaBody.insertRow();
 
                 let dataFormatada = "";
                 if (dados.data) {
                     const partes = dados.data.split("-");
-                    if (partes.length === 3) {
-                        dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-                    } else {
-                        dataFormatada = dados.data;
-                    }
+                    if (partes.length === 3) dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    else dataFormatada = dados.data;
                 }
 
                 novaLinha.insertCell(0).textContent = dados.nome || "";
@@ -193,38 +201,78 @@
                 btnEditar.textContent = "Editar";
                 btnEditar.onclick = () => carregarDadosParaEditar(id, dados);
 
-                const btnExcluir = document.createElement("button");
-                btnExcluir.className = "btn-excluir";
-                btnExcluir.textContent = "Excluir";
-                btnExcluir.onclick = () => excluirItemDireto(id);
+                // --- ALTERADO: TEXTO DO BOTÃO MUDOU PARA "COMPRADO" ---
+                const btnComprado = document.createElement("button");
+                btnComprado.className = "btn-comprado-tabela";
+                btnComprado.textContent = "Comprado";
+                btnComprado.onclick = () => prepararParaMover(id, dados);
 
                 celulaAcoes.appendChild(btnEditar);
-                celulaAcoes.appendChild(btnExcluir);
+                celulaAcoes.appendChild(btnComprado);
             });
         });
 
-        // --- FUNÇÃO: SALVAR OU ATUALIZAR DADOS ---
+        // --- CONTROLE DO MODAL DE CONFIRMAÇÃO ---
+        function prepararParaMover(id, dadosDoItem) {
+            idItemParaMover = id;
+            dadosItemParaMover = dadosDoItem;
+            document.getElementById("textoItemSelecionado").textContent = dadosDoItem.nome || "Item sem nome";
+            document.getElementById("modalAguardando").style.display = "flex";
+        }
+        window.prepararParaMover = prepararParaMover;
+
+        window.fecharModalAguardando = function () {
+            document.getElementById("modalAguardando").style.display = "none";
+            idItemParaMover = null;
+            dadosItemParaMover = null;
+        };
+
+        // ENVIAR DE FATO PARA A COLEÇÃO AGUARDANDO COM A DATA ATUALIZADA
+        document.getElementById("btnConfirmarAguardando").onclick = async function () {
+            if (!idItemParaMover || !dadosItemParaMover) return;
+
+            try {
+                // Captura a data exata do clique (hoje)
+                const agora = new Date();
+                const ano = agora.getFullYear();
+                const mes = String(agora.getMonth() + 1).padStart(2, '0'); // Meses começam em 0
+                const dia = String(agora.getDate()).padStart(2, '0');
+                const dataDeHoje = `${ano}-${mes}-${dia}`;
+
+                // 1. Salva na coleção "aguardando" com a nova data
+                await addDoc(colecaoAguardando, {
+                    nome: dadosItemParaMover.nome || "",
+                    quantidade: dadosItemParaMover.quantidade || "",
+                    data: dataDeHoje, // <--- Aqui substitui a data antiga pelo dia de hoje
+                    observacao: dadosItemParaMover.observacao || "estoque",
+                    movidoEm: agora.toISOString()
+                });
+
+                // 2. Remove da coleção "vendas"
+                const documentoOriginalRef = doc(db, "vendas", idItemParaMover);
+                await deleteDoc(documentoOriginalRef);
+
+                fecharModalAguardando();
+            } catch (erro) {
+                console.error("Erro ao transferir item: ", erro);
+                alert("Ocorreu um erro ao processar a compra do item.");
+            }
+        };
+
+        // --- SALVAR OU EDITAR DA TELA PRINCIPAL ---
         document.getElementById("btnConfirmarForm").onclick = async function () {
             const nome = document.getElementById("inputNome").value.trim();
-            const quantidade = document.getElementById("inputQtd").value.trim();
+            const quantity = document.getElementById("inputQtd").value.trim();
             const data = document.getElementById("inputData").value;
             let observacao = document.getElementById("inputObs").value.trim();
 
             if (!nome || !data) {
-                alert("Por favor, preencha os campos obrigatórios: Nome do Item e Data!");
+                alert("Por favor, preencha os campos obrigatórios!");
                 return;
             }
+            if (observacao === "") observacao = "estoque";
 
-            if (observacao === "") {
-                observacao = "estoque";
-            }
-
-            const itemDados = {
-                nome: nome,
-                quantidade: quantidade,
-                data: data,
-                observacao: observacao
-            };
+            const itemDados = { nome, quantidade: quantity, data, observacao };
 
             try {
                 if (idItemSendoEditado) {
@@ -236,25 +284,11 @@
                 }
                 fecharModal();
             } catch (erro) {
-                console.error("Erro ao salvar documento: ", erro);
-                alert("Ocorreu um erro ao salvar o item.");
+                console.error("Erro ao salvar: ", erro);
             }
         };
 
-        // --- FUNÇÃO: EXCLUSÃO DIRETA ---
-        async function excluirItemDireto(id) {
-            if (confirm("Tem certeza absoluta de que deseja excluir este item permanentemente?")) {
-                try {
-                    const documentoRef = doc(db, "vendas", id);
-                    await deleteDoc(documentoRef);
-                } catch (erro) {
-                    console.error("Erro ao deletar: ", erro);
-                    alert("Não foi possível excluir o item.");
-                }
-            }
-        }
-
-        // --- FUNÇÕES DE CONTROLE DOS MODAIS ---
+        // --- ABERTURA DO MODAL DE CADASTRO ---
         window.abrirModalCadastro = function () {
             idItemSendoEditado = null;
             document.getElementById("modalTitulo").textContent = "Adicionar Novo Item";
